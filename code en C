@@ -1,0 +1,358 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+typedef struct CompteBancaire {
+    int numeroCompte;
+    char nomTitulaire[50];
+    float solde;
+    char IdCompte[8];
+    char Mdp[20];
+    struct CompteBancaire* suivant;
+} CompteBancaire;
+
+void clearInputBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+void Menu() {
+    printf("-------------------------------------------------------\n");
+    printf("\n                  ***E-Bank***     \n\n");
+    printf("           < WELCOME TO THE MAIN MENU >\n\n");
+    printf("-------------------------------------------------------\n");
+    printf("1- Creer un nouveau compte.\n");
+    printf("2- Mise a jour des informations d un compte existant.\n");
+    printf("3- Afficher les details d un compte existant.\n");
+    printf("4- Supprimer un compte existant.\n");
+    printf("5- Transferer de l argent vers un autre compte.\n");
+    printf("6- Calculer les interets sur un compte.\n");
+    printf("7- Afficher la base de donnees bancaires.\n");
+    printf("8- Quitter.\n\n");
+    printf("------------------------------------------------------\n\n");
+    printf("Choisissez une option : ");
+   
+}
+
+CompteBancaire* creercompte(CompteBancaire** teteListe, int numeroCompte, const char* nomTitulaire, float solde, const char* IdCompte, const char* Mdp) {
+    CompteBancaire* nouveauCompte = (CompteBancaire*)malloc(sizeof(CompteBancaire));
+    if (nouveauCompte == NULL) {
+        printf("Erreur lors de la création du compte. Mémoire insuffisante.\n");
+        return *teteListe;
+    }
+
+    nouveauCompte->numeroCompte = numeroCompte;
+    strncpy(nouveauCompte->nomTitulaire, nomTitulaire, sizeof(nouveauCompte->nomTitulaire) - 1);
+    nouveauCompte->nomTitulaire[sizeof(nouveauCompte->nomTitulaire) - 1] = '\0'; 
+
+    nouveauCompte->solde = solde;
+    strncpy(nouveauCompte->IdCompte, IdCompte, sizeof(nouveauCompte->IdCompte) - 1);
+    nouveauCompte->IdCompte[sizeof(nouveauCompte->IdCompte) - 1] = '\0';  
+
+    strncpy(nouveauCompte->Mdp, Mdp, sizeof(nouveauCompte->Mdp) - 1);
+    nouveauCompte->Mdp[sizeof(nouveauCompte->Mdp) - 1] = '\0';  
+
+    nouveauCompte->suivant = *teteListe;
+    *teteListe = nouveauCompte;
+
+    return *teteListe;
+}
+
+void afficherbdd(CompteBancaire* teteListe) {
+    CompteBancaire* courant = teteListe;
+    while (courant != NULL) {
+        printf("\n numeroCompte : ");
+        printf("%d", courant->numeroCompte);
+        printf("\n nomTitulaire : ");
+        printf("%s", courant->nomTitulaire);
+        printf("\n solde : ");
+        printf("%f", courant->solde);
+        printf("\n IdCompte : ");
+        printf("%s", courant->IdCompte);
+        printf("\n Mdp : ");
+        printf("%s", courant->Mdp);
+        printf("\n");
+        courant = courant->suivant;
+    }
+}
+
+void Affichercompte(CompteBancaire* teteListe, int numeroCompte) {
+    CompteBancaire* courant = teteListe;
+    while (courant != NULL) {
+        if (courant->numeroCompte == numeroCompte) {
+            printf("\n numeroCompte : ");
+            printf("%d", courant->numeroCompte);
+            printf("\n nomTitulaire : ");
+            printf("%s", courant->nomTitulaire);
+            printf("\n solde : ");
+            printf("%f", courant->solde);
+            printf("\n IdCompte : ");
+            printf("%s", courant->IdCompte);
+            printf("\n Mdp : ");
+            printf("%s", courant->Mdp);
+            printf("\n");
+            return;
+        }
+        courant = courant->suivant;
+    }
+    printf("Aucun compte trouve avec le numero : %d\n", numeroCompte);
+}
+
+void MAJ(CompteBancaire* teteListe, int numeroCompte, const char* nouveauNomTitulaire, float nouveauSolde, const char* nouvelIdCompte, const char* nouveauMdp) {
+    CompteBancaire* courant = teteListe;
+    while (courant != NULL) {
+        if (courant->numeroCompte == numeroCompte) {
+            strncpy(courant->nomTitulaire, nouveauNomTitulaire, sizeof(courant->nomTitulaire));
+            courant->solde = nouveauSolde;
+            strncpy(courant->IdCompte, nouvelIdCompte, sizeof(courant->IdCompte));
+            strncpy(courant->Mdp, nouveauMdp, sizeof(courant->Mdp));
+            printf("\n *Le compte a ete mis a jour avec succes*\n\n");
+            printf("-Nouvelles informations du compte :\n");
+            printf("Numéro de compte: %d\n", courant->numeroCompte);
+            printf("Titulaire du compte: %s\n", courant->nomTitulaire);
+            printf("Solde: %.2f\n", courant->solde);
+            printf("IdCompte: %s\n", courant->IdCompte);
+            printf("Mdp: %s\n", courant->Mdp);
+            return;
+        }
+        courant = courant->suivant;
+    }
+    printf("\nAucun compte trouve avec le numéro : %d\n", numeroCompte);
+}
+
+void supprimer(CompteBancaire* teteListe, int numeroCompte, const char* IdCompte, const char* Mdp) {
+    CompteBancaire* courant = teteListe;
+    CompteBancaire* precedent = NULL;
+    while (courant != NULL && (courant->numeroCompte != numeroCompte || strcmp(courant->IdCompte, IdCompte) != 0 || strcmp(courant->Mdp, Mdp) != 0)) {
+        precedent = courant;
+        courant = courant->suivant;
+    }
+    if (courant != NULL) {
+        if (precedent != NULL) {
+            precedent->suivant = courant->suivant;
+        } else {
+            teteListe = courant->suivant;
+        }
+        free(courant);
+        printf("\nLe compte a ete supprime avec succes.\n");
+    } else {
+        printf("\nAucun compte trouve avec le numero : %d et l'ID : %s et le mot de passe : %s\n", numeroCompte, IdCompte, Mdp);
+    }
+}
+
+void TransfererArgent(CompteBancaire* teteListe, int numeroCompteExpediteur, int numeroCompteRecepteur, float montant) {
+    CompteBancaire* expediteur = NULL;
+    CompteBancaire* recepteur = NULL;
+    // Trouver le compte de l'expediteur
+    CompteBancaire* actuel = teteListe;
+    while (actuel != NULL) {
+        if (actuel->numeroCompte == numeroCompteExpediteur) {
+            expediteur = actuel;
+            break;
+        }
+        actuel = actuel->suivant;
+    }
+    // Trouver le compte du recepteur
+    actuel = teteListe;
+    while (actuel != NULL) {
+        if (actuel->numeroCompte == numeroCompteRecepteur) {  
+            recepteur = actuel;
+            break;
+        }
+        actuel = actuel->suivant;
+    }
+    // Vérifier si les deux comptes ont été trouvés
+    if (expediteur == NULL || recepteur == NULL) {
+        printf("\nUn ou les deux comptes n'ont pas pu être trouvés.\n");
+        return;
+    }
+    // Vérifier si le compte de l'expediteur a suffisamment de fonds
+    if (expediteur->solde < montant) {
+        printf("\nLe compte de l'expediteur n'a pas assez de fonds pour couvrir le transfert.\n");
+        return;
+    }
+    // Effectuer le transfert
+    expediteur->solde -= montant;
+    recepteur->solde += montant;
+    printf("\nTransfert de %.2f du compte %d au compte %d a réussi.\n", montant, numeroCompteExpediteur, numeroCompteRecepteur);
+}
+
+void CalculerInterets(CompteBancaire* teteListe, float tauxInteret) {
+    CompteBancaire* courant = teteListe;
+    while (courant != NULL) {
+        float interets = courant->solde * tauxInteret;
+        courant->solde += interets;
+        printf("\nInterets calcules pour le compte %d : %.2f\n", courant->numeroCompte, interets);
+        courant = courant->suivant;
+    }
+}
+
+void chargerdonnees(CompteBancaire** teteListe) {
+    FILE* file = fopen("bdd.txt", "r");
+    if (file == NULL) {
+        printf("\nErreur lors de l ouverture du fichier bdd.txt.\n");
+        return;
+    }
+    while (!feof(file)) {
+        CompteBancaire* nouveauCompte = (CompteBancaire*)malloc(sizeof(CompteBancaire));
+        if (fscanf(file, "%d %49s %f", &nouveauCompte->numeroCompte, nouveauCompte->nomTitulaire, &nouveauCompte->solde) == 3) {
+            nouveauCompte->suivant = *teteListe;
+            *teteListe = nouveauCompte;
+        }
+    }
+    fclose(file);
+}
+
+int main() {
+    CompteBancaire* teteListe = NULL;
+    int choix;
+
+    do {
+        Menu();
+        if (scanf("%d", &choix) != 1) {
+            printf("\nInvalid input. Please enter a valid numeric option.\n");
+           clearInputBuffer();
+            continue;  
+        }
+
+        switch (choix) {
+            case 1: {
+                int numeroCompte;
+                char nomTitulaire[50];
+                float solde;
+                char IdCompte[50];
+                char Mdp[50];
+
+                printf("\nEntrez le numero de compte : ");
+                if (scanf("%d", &numeroCompte) != 1) {
+                    printf("\n Invalid input for account number. Please enter a valid numeric value.\n");
+                    while (getchar() != '\n');
+                    break;
+                }
+                while (getchar() != '\n');
+
+                printf("Entrez le nom du titulaire : ");
+                if (fgets(nomTitulaire, sizeof(nomTitulaire), stdin) == NULL) {
+                    printf("Error reading input.\n");
+                    break;
+                }
+                nomTitulaire[strcspn(nomTitulaire, "\n")] = '\0';  
+
+                printf("Entrez le solde du compte : ");
+                if (scanf("%f", &solde) != 1) {
+                    printf("Invalid input for account balance. Please enter a valid numeric value.\n");
+                    while (getchar() != '\n');
+                    break;
+                }
+                while (getchar() != '\n');
+
+                printf("Entrez l'identifiant du compte : ");
+                if (fgets(IdCompte, sizeof(IdCompte), stdin) == NULL) {
+                    printf("Error reading input.\n");
+                    break;
+                }
+                IdCompte[strcspn(IdCompte, "\n")] = '\0';  
+
+                printf("Entrez le mot de passe du compte : ");
+                if (fgets(Mdp, sizeof(Mdp), stdin) == NULL) {
+                    printf("Error reading input.\n");
+                    break;
+                }
+                Mdp[strcspn(Mdp, "\n")] = '\0';  
+                teteListe = creercompte(&teteListe, numeroCompte, nomTitulaire, solde, IdCompte, Mdp);
+                printf("Le compte a ete cree avec succes.\n");
+                break;
+            }
+
+            case 2: {
+                int numeroCompteMAJ;
+                char nouveauNomTitulaire[50];
+                float nouveauSolde;
+                char nouvelIdCompte[50];
+                char nouveauMdp[50];
+
+                printf(" -Entrez le numero de compte a mettre a jour :\n ");
+                scanf("%d", &numeroCompteMAJ);
+
+                printf(" -Entrez le nouveau nom du titulaire :\n ");
+                scanf("%s", nouveauNomTitulaire);
+
+                printf(" -Entrez le nouveau solde du compte :\n ");
+                scanf("%f", &nouveauSolde);
+
+                printf(" -Entrez le nouvel identifiant du compte :\n ");
+                scanf("%s", nouvelIdCompte);
+
+                printf(" -Entrez le nouveau mot de passe du compte :\n ");
+                scanf("%s", nouveauMdp);
+
+                MAJ(teteListe, numeroCompteMAJ, nouveauNomTitulaire, nouveauSolde, nouvelIdCompte, nouveauMdp);
+                break;
+            }
+
+            case 3:
+                int numeroCompteafficher;
+                printf("Entrez le numero de compte a afficher : ");
+                scanf("%d", &numeroCompteafficher);
+                Affichercompte(teteListe, numeroCompteafficher);
+                break;
+
+            case 4:
+                int numeroCompteasupprimer;
+                char IdCompte[8];
+                char Mdp[20];
+
+                printf("Entrez le numero de compte : ");
+                scanf("%d", &numeroCompteasupprimer);
+
+                printf("Entrez l'ID du compte : ");
+                scanf("%s", IdCompte);
+
+                printf("Entrez le mot de passe du compte : ");
+                scanf("%s", Mdp);
+
+                supprimer(teteListe, numeroCompteasupprimer, IdCompte, Mdp);
+                break;
+                
+
+            case 5:
+                int numeroCompteExpediteur;
+                int numeroCompteRecepteur;
+                float montant;
+
+                printf("Entrez le numero de compte de l'expediteur : ");
+                scanf("%d", &numeroCompteExpediteur);
+
+                printf("Entrez le numero de compte du recepteur : ");
+                scanf("%d", &numeroCompteRecepteur);
+
+                printf("Entrez le montant du transfert : ");
+                scanf("%f", &montant);
+
+                TransfererArgent(teteListe, numeroCompteExpediteur, numeroCompteRecepteur, montant);
+                break;
+
+            case 6:
+                float tauxInteret;
+                printf("Entrez le taux d'interet : ");
+                scanf("%f", &tauxInteret);
+                CalculerInterets(teteListe, tauxInteret);
+                break;
+
+            case 7:
+                afficherbdd(teteListe);
+                break;
+
+            case 8:
+                printf("Au revoir!\n");
+                return 0;
+
+            default:
+                printf("Option invalide. Veuillez choisir une option valide.\n");
+                break;
+        } 
+        clearInputBuffer();
+
+    } while (choix != 8);
+
+    return 0;
+}
